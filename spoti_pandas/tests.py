@@ -1,4 +1,5 @@
-import sp_functions as sppd
+# from spoti_pandas import sp_functions as sppd
+import spoti_pandas.sp_functions as sppd
 
 pl_link = '"https://open.spotify.com/playlist/7eWWLoTfmLUcD0viBP6Hr0?si=e8b0760749404749"'
 
