@@ -6,14 +6,14 @@ from spotipy.oauth2 import SpotifyClientCredentials
 import pandas as pd
 import numpy as np
 
-# Spotify Credentials
+
+
+#Authentication - without user
+client_credentials_manager = SpotifyCl# Spotify Credentials
 import spot_creds
 
 clid = spot_creds.client_id
-secret = spot_creds.secret
-
-#Authentication - without user
-client_credentials_manager = SpotifyClientCredentials(client_id=clid, client_secret=secret)
+secret = spot_creds.secretientCredentials(client_id=clid, client_secret=secret)
 sp = spotipy.Spotify(client_credentials_manager = client_credentials_manager)
 
 
@@ -322,5 +322,12 @@ def get_artist_track_features(artist_uri):
 
     return tracks_df
 
+
+def related_artists(artist_uri):
+    # calls spotify.artist_related_artists and returns the top 20
+    # related artists and basic metadata in a dataframe
+    related = sp.artist_related_artists(artist_uri)
+    related_df = pd.json_normalize(related)
+    return related_df
 
 
