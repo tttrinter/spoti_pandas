@@ -4,18 +4,15 @@
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import pandas as pd
-import numpy as np
 
-
+# Spotify Credentials
+import spot_creds
+clid = spot_creds.client_id
+secret = spot_creds.secret
 
 #Authentication - without user
-client_credentials_manager = SpotifyCl# Spotify Credentials
-import spot_creds
-
-clid = spot_creds.client_id
-secret = spot_creds.secretientCredentials(client_id=clid, client_secret=secret)
+client_credentials_manager = SpotifyClientCredentials(client_id=clid, client_secret=secret)
 sp = spotipy.Spotify(client_credentials_manager = client_credentials_manager)
-
 
 def get_URI(list_link):
     """Extracts URI from playlist or album link"""
