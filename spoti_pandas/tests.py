@@ -8,8 +8,8 @@ pl_tracks = sppd.get_pl_tracks(pl_link)
 print(f"{len(pl_tracks)} tracks found")
 
 # Test playlist track details
-# pl_tracks_df = sppd.pl_track_features(pl_link)
-# print(f"{len(pl_tracks_df)} tracks found")
+pl_tracks_df = sppd.pl_track_features(pl_link)
+print(f"{len(pl_tracks_df)} tracks found")
 
 # Test get albums
 artist_uri = '2pXFmyqPm7wHJ1HGAwyR3L' #HCTM

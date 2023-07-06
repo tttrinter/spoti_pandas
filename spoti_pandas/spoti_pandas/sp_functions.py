@@ -4,6 +4,7 @@
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import pandas as pd
+import time
 
 # Spotify Credentials
 import spot_creds
@@ -169,11 +170,17 @@ def pl_track_features(playlist_link):
 
     # initialize dataframe for results
     tracks_df = pd.DataFrame()
+    artists_df = pd.DataFrame()
 
     playlist_URI = get_URI(playlist_link)
 
     # Loop over tracks to gather info
+    track_count = 1
     for track in sp.playlist_items(playlist_URI)["items"]:
+        if track_count % 25 == 0:
+            print("Sleeping for 60 seconds to avoid rate limit")
+            time.sleep(60)
+
         this_track = {}
         # URI
         track_uri = track["track"]["uri"]
@@ -183,14 +190,14 @@ def pl_track_features(playlist_link):
         this_track['track_name'] = track["track"]["name"]
 
         # Main Artist
-        artist_uri = track["track"]["artists"][0]["uri"]
-        this_track['artist_uri'] = artist_uri
-        artist_info = sp.artist(artist_uri)
+        artist_id = track["track"]["artists"][0]["id"]
+        this_track['artist_id'] = artist_id
+
+        # Add artist info to the artist-bank to minimize API calls and avoid rate limits
+        artists_df = artist_bank(artist_id, artists_df)
 
         # Name, popularity, genre
         this_track['artist_name'] = track["track"]["artists"][0]["name"]
-        this_track['artist_pop'] = artist_info["popularity"]
-        this_track['artist_genres'] = artist_info["genres"]
 
         # Album
         this_track['album'] = track["track"]["album"]["name"]
@@ -209,6 +216,10 @@ def pl_track_features(playlist_link):
         this_track_df = pd.json_normalize(this_track)
 
         tracks_df = pd.concat([tracks_df, this_track_df], ignore_index=True)
+        track_count += 1
+
+    # Merge with Artist data
+    tracks_df = tracks_df.merge(artists_df, how='left',on='artist_id')
 
     # Make sure there are no duplicates
     tracks_df = tracks_df.drop_duplicates('track_uri')
@@ -230,11 +241,17 @@ def album_track_features(album_link):
 
     # initialize dataframe for results
     tracks_df = pd.DataFrame()
+    artists_df = pd.DataFrame()
 
     album_uri = get_URI(album_link)
 
     # Loop over tracks to gather info
+    track_count = 1
     for track in sp.album_tracks(album_uri)["items"]:
+        if track_count % 25 == 0:
+            print("Sleeping for 60 seconds to avoid rate limit")
+            time.sleep(60)
+
         this_track = {}
         # URI
         track_uri = track["uri"]
@@ -244,14 +261,11 @@ def album_track_features(album_link):
         this_track['track_name'] = track["name"]
 
         # Main Artist
-        artist_uri = track["artists"][0]["uri"]
-        this_track['artist_uri'] = artist_uri
-        artist_info = sp.artist(artist_uri)
+        artist_id = track["artists"][0]["id"]
+        this_track['artist_id'] = artist_id
 
-        # Name, popularity, genre
-        this_track['artist_name'] =artist_info["name"]
-        this_track['artist_pop'] = artist_info["popularity"]
-        this_track['artist_genres'] = artist_info["genres"]
+        # Add artist info to the artist-bank to minimize API calls and avoid rate limits
+        artists_df = artist_bank(artist_id, artists_df)
 
         # Album
         album_info = sp.album(album_uri)
@@ -271,6 +285,10 @@ def album_track_features(album_link):
         this_track_df = pd.json_normalize(this_track)
 
         tracks_df = pd.concat([tracks_df, this_track_df], ignore_index=True)
+        track_count += 1
+
+    # Merge with Artist data
+    tracks_df = tracks_df.merge(artists_df, how='left',on='artist_id')
 
     # Make sure there are no duplicates
     tracks_df = tracks_df.drop_duplicates('track_uri')
@@ -324,7 +342,31 @@ def related_artists(artist_uri):
     # calls spotify.artist_related_artists and returns the top 20
     # related artists and basic metadata in a dataframe
     related = sp.artist_related_artists(artist_uri)
-    related_df = pd.json_normalize(related)
+    related_df = pd.json_normalize(related['artists'])
     return related_df
 
 
+def artist_bank(artist_id, artist_df=None):
+    # Maintains a cumulative list of artist info to avoid repeated API calls
+    # Input:
+    #     artist_id - id for a Spotify artist
+    #     artist_df: pandas DataFrame containing the cumulative list of artist details
+
+    # Returns: artist_df appended with the new artist details, if not already present
+    if artist_df is None:
+        artist_df = pd.DataFrame()
+
+    if 'artist_id' in artist_df.columns:
+        if artist_id in artist_df.artist_id:
+            return artist_df
+    else:
+        this_artist = sp.artist(artist_id)
+        this_artist_df = pd.json_normalize(this_artist)
+        this_artist_df = this_artist_df[['genres', 'id', 'name', 'popularity', 'uri', 'followers.total']]
+        this_artist_df.columns = ['artist_genres', 'artist_id', 'aritst_name', 'artist_pop', 'artist_uri',
+                                  'artist_followers_total']
+
+        # combine with running list
+        artist_df = pd.concat([artist_df, this_artist_df])
+
+    return artist_df
