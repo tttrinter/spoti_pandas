@@ -11,11 +11,12 @@ import spot_creds
 clid = spot_creds.client_id
 secret = spot_creds.secret
 
-#Authentication - without user
+# Authentication - without user
 client_credentials_manager = SpotifyClientCredentials(client_id=clid, client_secret=secret)
-sp = spotipy.Spotify(client_credentials_manager = client_credentials_manager)
+sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 
-def get_URI(list_link):
+
+def get_uri(list_link):
     """Extracts URI from playlist or album link"""
     uri = list_link.split("/")[-1].split("?")[0]
     return uri
@@ -29,7 +30,7 @@ def get_pl_tracks(playlist_link):
     Returns:
         list of track uris
     """
-    pl_uri = get_URI(playlist_link)
+    pl_uri = get_uri(playlist_link)
     tracks = sp.playlist_items(pl_uri)["items"]
     return tracks
 
@@ -45,14 +46,15 @@ def get_album_tracks(album_link):
     tracks = sp.album_tracks(album_link)["items"]
     return tracks
 
-def extract_track_feat(track_uri, audio_feat = False):
+
+def extract_track_feat(track_uri, audio_feat=False):
     """Using the Spotify API, gathers metadata and selected audio features for the given track
 
     Keyword Arguments:
     track_uri -- string, Spotify's uri for the track
 
     Returns:
-    pandas dataframe with all of the metadata and audiofeatures for the track
+    pandas dataframe with all the metadata and audio features for the track
     """
     this_track = {}
     # URI
@@ -81,12 +83,13 @@ def extract_track_feat(track_uri, audio_feat = False):
     this_track['explicit'] = track['explicit']
 
     # Audio Features
-    if audio_feat==True:
+    if audio_feat:
         this_track = extract_audio_feat(track_uri, this_track)
 
     this_track_df = pd.json_normalize(this_track)
 
-    return (this_track_df)
+    return this_track_df
+
 
 def extract_audio_feat(track_uri, track_dict):
     """Extracts selected audio features from the Spotify audio_features function and
@@ -115,19 +118,6 @@ def extract_audio_feat(track_uri, track_dict):
 
     audio_feat = sp.audio_features(track_uri)[0]
 
-    audio_feat_list = ['acousticness',
-                       'danceability',
-                       'energy',
-                       'instrumentalness',
-                       'key',
-                       'liveness',
-                       'loudness',
-                       'mode',
-                       'speechiness',
-                       'tempo',
-                       'time_signature',
-                       'valence']
-
     for feat in audio_feat_list:
         track_dict[feat] = audio_feat[feat]
 
@@ -141,7 +131,7 @@ def get_audio_analysis(track_uri):
     track_uri -- string, Spotify's uri for the track
 
     Returns:
-    dictionary with all of the audio_analysis features for the track, excluding:
+    dictionary with the audio_analysis features for the track, excluding:
     codestring, echoprintstring, synchstring, and rhythmstring
     """
 
@@ -153,16 +143,16 @@ def get_audio_analysis(track_uri):
     del audio_anal['track']['synchstring']
     del audio_anal['track']['rhythmstring']
 
-    return(audio_anal)
+    return audio_anal
 
 
 def pl_track_features(playlist_link):
     """
     Calls the Spotify API to collect track listings for each playlist.
-    Pulls meta data and track data for each track and returns a dataframe with all of the features
+    Pulls metadata and track data for each track and returns a dataframe with the features
 
-    NOTE: this should be reusable for an album, however, the JSON tags are not in the same place
-    so I'm making separate functions to simplify the extraction
+    NOTE: this should be reusable for an album, however, the JSON tags are not in the same place.
+    I'm making separate functions to simplify the extraction
 
     Input: playlist_link - URI for a Spotify playlist
     Returns: pandas dataframe with tracklisting and audio features
@@ -172,11 +162,11 @@ def pl_track_features(playlist_link):
     tracks_df = pd.DataFrame()
     artists_df = pd.DataFrame()
 
-    playlist_URI = get_URI(playlist_link)
+    playlist_uri = get_uri(playlist_link)
 
     # Loop over tracks to gather info
     track_count = 1
-    for track in sp.playlist_items(playlist_URI)["items"]:
+    for track in sp.playlist_items(playlist_uri)["items"]:
         if track_count % 25 == 0:
             print("Sleeping for 60 seconds to avoid rate limit")
             time.sleep(60)
@@ -219,7 +209,7 @@ def pl_track_features(playlist_link):
         track_count += 1
 
     # Merge with Artist data
-    tracks_df = tracks_df.merge(artists_df, how='left',on='artist_id')
+    tracks_df = tracks_df.merge(artists_df, how='left', on='artist_id')
 
     # Make sure there are no duplicates
     tracks_df = tracks_df.drop_duplicates('track_uri')
@@ -230,10 +220,10 @@ def pl_track_features(playlist_link):
 def album_track_features(album_link):
     """
     Calls the Spotify API to collect track listings for an album.
-    Pulls meta data and track data for each track and returns a dataframe with all of the features
+    Pulls metadata and track data for each track and returns a dataframe with the features
 
-    NOTE: this should be reusable for an playlist, however, the JSON tags are not in the same place
-    so I'm making separate functions to simplify the extraction
+    NOTE: this should be reusable for a playlist, however, the JSON tags are not in the same place.
+    I'm making separate functions to simplify the extraction
 
     Input: album_link - URI for a Spotify album
     Returns: pandas dataframe with tracklisting and audio features
@@ -243,7 +233,7 @@ def album_track_features(album_link):
     tracks_df = pd.DataFrame()
     artists_df = pd.DataFrame()
 
-    album_uri = get_URI(album_link)
+    album_uri = get_uri(album_link)
 
     # Loop over tracks to gather info
     track_count = 1
@@ -272,7 +262,7 @@ def album_track_features(album_link):
         this_track['album'] = album_info["name"]
 
         # Track Metadata
-        this_track['track_pop'] = -1 # not in album info
+        this_track['track_pop'] = -1  # not in album info
         this_track['explicit'] = track['explicit']
 
         # Audio Features
@@ -288,7 +278,7 @@ def album_track_features(album_link):
         track_count += 1
 
     # Merge with Artist data
-    tracks_df = tracks_df.merge(artists_df, how='left',on='artist_id')
+    tracks_df = tracks_df.merge(artists_df, how='left', on='artist_id')
 
     # Make sure there are no duplicates
     tracks_df = tracks_df.drop_duplicates('track_uri')
@@ -313,7 +303,7 @@ def get_artist_albums(artist_uri):
                   'total_tracks']
 
     albums_df = pd.json_normalize(albums["items"])[album_cols]
-    return(albums_df)
+    return albums_df
 
 
 def get_artist_track_features(artist_uri):
@@ -326,14 +316,17 @@ def get_artist_track_features(artist_uri):
     Returns: pandas dataframe with a list of tracks
     """
 
-    albums = get_artist_albums(artist_uri)[['name','id']]
+    albums = get_artist_albums(artist_uri)[['name', 'id']]
 
     # initialize dataframe for results
     tracks_df = pd.DataFrame()
 
     for album_id in albums['id']:
-        album_tracks = album_track_features(album_id)
-        tracks_df = pd.concat([tracks_df, album_tracks])
+        try:
+            album_tracks = album_track_features(album_id)
+            tracks_df = pd.concat([tracks_df, album_tracks])
+        except:
+            pass
 
     return tracks_df
 
