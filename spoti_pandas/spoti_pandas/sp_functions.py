@@ -160,16 +160,16 @@ def pl_track_features(playlist_link):
 
     # initialize dataframe for results
     tracks_df = pd.DataFrame()
-    artists_df = pd.DataFrame()
+    # artists_df = pd.DataFrame()
 
     playlist_uri = get_uri(playlist_link)
 
     # Loop over tracks to gather info
     track_count = 1
     for track in sp.playlist_items(playlist_uri)["items"]:
-        if track_count % 25 == 0:
-            print("Sleeping for 60 seconds to avoid rate limit")
-            time.sleep(60)
+        # if track_count % 25 == 0:
+        #     print("Sleeping for 60 seconds to avoid rate limit")
+        #     time.sleep(60)
 
         this_track = {}
         # URI
@@ -181,10 +181,12 @@ def pl_track_features(playlist_link):
 
         # Main Artist
         artist_id = track["track"]["artists"][0]["id"]
+        artist_name = track["track"]["artists"][0]["name"]
         this_track['artist_id'] = artist_id
+        this_track['artist_name'] = artist_name
 
         # Add artist info to the artist-bank to minimize API calls and avoid rate limits
-        artists_df = artist_bank(artist_id, artists_df)
+        # artists_df = artist_bank(artist_id, artists_df)
 
         # Name, popularity, genre
         this_track['artist_name'] = track["track"]["artists"][0]["name"]
@@ -209,7 +211,7 @@ def pl_track_features(playlist_link):
         track_count += 1
 
     # Merge with Artist data
-    tracks_df = tracks_df.merge(artists_df, how='left', on='artist_id')
+    # tracks_df = tracks_df.merge(artists_df, how='left', on='artist_id')
 
     # Make sure there are no duplicates
     tracks_df = tracks_df.drop_duplicates('track_uri')
@@ -231,7 +233,7 @@ def album_track_features(album_link):
 
     # initialize dataframe for results
     tracks_df = pd.DataFrame()
-    artists_df = pd.DataFrame()
+    # artists_df = pd.DataFrame()
 
     album_uri = get_uri(album_link)
 
@@ -252,10 +254,12 @@ def album_track_features(album_link):
 
         # Main Artist
         artist_id = track["artists"][0]["id"]
+        artist_name = track["artists"][0]["name"]
         this_track['artist_id'] = artist_id
+        this_track['artist_name'] = artist_name
 
         # Add artist info to the artist-bank to minimize API calls and avoid rate limits
-        artists_df = artist_bank(artist_id, artists_df)
+        # artists_df = artist_bank(artist_id, artists_df)
 
         # Album
         album_info = sp.album(album_uri)
@@ -278,7 +282,7 @@ def album_track_features(album_link):
         track_count += 1
 
     # Merge with Artist data
-    tracks_df = tracks_df.merge(artists_df, how='left', on='artist_id')
+    # tracks_df = tracks_df.merge(artists_df, how='left', on='artist_id')
 
     # Make sure there are no duplicates
     tracks_df = tracks_df.drop_duplicates('track_uri')
@@ -321,9 +325,14 @@ def get_artist_track_features(artist_uri):
     # initialize dataframe for results
     tracks_df = pd.DataFrame()
 
-    for album_id in albums['id']:
+    for i in range(len(albums)):
+        album_id = albums.iloc[i]['id']
+        album_name = albums.iloc[i]['name']
+        print(f'Getting tracks for {album_name}')
+
         try:
             album_tracks = album_track_features(album_id)
+            time.sleep(60)
             tracks_df = pd.concat([tracks_df, album_tracks])
         except:
             pass
