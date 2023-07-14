@@ -318,6 +318,7 @@ def get_artist_track_features(artist_uri):
         artist_uri - URI for a Spotify artist
         analysis: boolean, if True, then pull Spotify analysis data for each track
     Returns: pandas dataframe with a list of tracks
+    UPDATED
     """
 
     albums = get_artist_albums(artist_uri)[['name', 'id']]
